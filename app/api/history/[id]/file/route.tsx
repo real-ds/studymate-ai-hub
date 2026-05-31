@@ -80,9 +80,9 @@ export async function GET(
         return Response.json({ error: "Unsupported feature" }, { status: 400 })
     }
 
-    // 4. Generate the PDF buffer using react-pdf
-    const pdfFn = pdf as unknown as (d: unknown) => { toBuffer: () => Promise<Buffer> }
-    const buffer = await pdfFn(doc as unknown).toBuffer()
+    // 4. Generate the PDF stream using react-pdf
+    const pdfFn = pdf as unknown as (d: unknown) => { toBuffer: () => Promise<ReadableStream> }
+    const stream = await pdfFn(doc as unknown).toBuffer() as unknown as ReadableStream
 
     const headers = new Headers()
     headers.set("Content-Type", "application/pdf")
@@ -94,7 +94,7 @@ export async function GET(
       `${disposition}; filename*=UTF-8''${encodedName}; filename="${filename}"`
     )
 
-    return new Response(new Uint8Array(buffer), {
+    return new Response(stream as unknown as BodyInit, {
       headers,
     })
   } catch (error) {
