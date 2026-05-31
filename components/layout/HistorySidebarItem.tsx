@@ -77,32 +77,36 @@ export default function HistorySidebarItem({
         )}
       />
       <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
-          onClick={(e) => {
-            e.stopPropagation()
-            window.open(`/api/history/${id}/file`, "_blank")
-          }}
-          title="View File"
-          aria-label="View original file"
-        >
-          <Eye className="size-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
-          onClick={(e) => {
-            e.stopPropagation()
-            window.location.href = `/api/history/${id}/file?download=true`
-          }}
-          title="Download File"
-          aria-label="Download original file"
-        >
-          <Download className="size-3" />
-        </Button>
+        {status === "done" && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(`/api/history/${id}/file`, "_blank")
+              }}
+              title="View PDF"
+              aria-label="View converted PDF"
+            >
+              <Eye className="size-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
+              onClick={(e) => {
+                e.stopPropagation()
+                window.location.href = `/api/history/${id}/file?download=true`
+              }}
+              title="Download PDF"
+              aria-label="Download converted PDF"
+            >
+              <Download className="size-3" />
+            </Button>
+          </>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"

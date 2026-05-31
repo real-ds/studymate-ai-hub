@@ -16,6 +16,11 @@ function isFeaturePage(path: string) {
   return FEATURE_PAGES.some((p) => path.startsWith(p))
 }
 
+function getFeatureFromPath(path: string): string | null {
+  const match = path.match(/^\/feature\/([^/]+)/)
+  return match ? match[1] : null
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -33,7 +38,9 @@ export default function HistorySidebar() {
   const fetchHistory = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/history", {
+      const feature = getFeatureFromPath(pathname)
+      const url = feature ? `/api/history?feature=${feature}` : "/api/history"
+      const res = await fetch(url, {
         headers: { "Cache-Control": "no-cache" },
       })
       if (!res.ok) throw new Error("Failed to fetch")
@@ -53,7 +60,7 @@ export default function HistorySidebar() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     if (isFeaturePage(pathname) && session?.user?.email) {
