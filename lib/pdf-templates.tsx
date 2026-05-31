@@ -147,19 +147,151 @@ const styles = StyleSheet.create({
     width: "50%",
     paddingRight: 10,
   },
+  h4: {
+    fontSize: 11,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 4,
+    color: "#1C1C1E",
+  },
+  table: {
+    width: "100%",
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#E5E0D6",
+    borderRadius: 4,
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E0D6",
+    minHeight: 20,
+  },
+  tableHeaderRow: {
+    backgroundColor: "#FAF8F4",
+  },
+  tableCellContainer: {
+    flex: 1,
+    padding: 6,
+    borderRightWidth: 1,
+    borderRightColor: "#E5E0D6",
+  },
+  tableCell: {
+    fontSize: 8,
+    color: "#1C1C1E",
+  },
+  tableHeaderCell: {
+    fontWeight: "bold",
+  },
 })
+
+function renderFormattedText(text: string, baseStyle?: any): React.ReactNode {
+  const regex = /(\*\*(.*?)\*\*|\*(.*?)\*|`(.*?)`)/g
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match
+  let key = 0
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    if (match[2]) {
+      // Bold
+      parts.push(<Text key={key++} style={{ fontWeight: "bold" }}>{match[2]}</Text>)
+    } else if (match[3]) {
+      // Italic
+      parts.push(<Text key={key++} style={{ fontStyle: "italic" }}>{match[3]}</Text>)
+    } else if (match[4]) {
+      // Inline code
+      parts.push(
+        <Text
+          key={key++}
+          style={{
+            fontFamily: "Courier",
+            backgroundColor: "#FAF8F4",
+            paddingHorizontal: 2,
+          }}
+        >
+          {match[4]}
+        </Text>
+      )
+    }
+
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return <Text style={baseStyle}>{parts}</Text>
+}
+
+function renderTablePdf(rows: string[][], key: number): React.ReactNode {
+  const headers = rows[0] || []
+  const dataRows = rows.slice(1)
+
+  return (
+    <View key={key} style={styles.table} wrap={false}>
+      {/* Header Row */}
+      <View style={[styles.tableRow, styles.tableHeaderRow]}>
+        {headers.map((cell, idx) => (
+          <View
+            key={idx}
+            style={[
+              styles.tableCellContainer,
+              idx === headers.length - 1 ? { borderRightWidth: 0 } : {},
+            ]}
+          >
+            <Text style={[styles.tableCell, styles.tableHeaderCell]}>
+              {cell}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {/* Data Rows */}
+      {dataRows.map((row, rIdx) => (
+        <View
+          key={rIdx}
+          style={[
+            styles.tableRow,
+            rIdx % 2 === 1 ? { backgroundColor: "#FAF8F4" } : {},
+            rIdx === dataRows.length - 1 ? { borderBottomWidth: 0 } : {},
+          ]}
+        >
+          {row.map((cell, cIdx) => (
+            <View
+              key={cIdx}
+              style={[
+                styles.tableCellContainer,
+                cIdx === row.length - 1 ? { borderRightWidth: 0 } : {},
+              ]}
+            >
+              <Text style={styles.tableCell}>{cell}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  )
+}
 
 function parseMarkdownToPdf(md: string): React.ReactNode[] {
   const lines = md.split("\n")
   const nodes: React.ReactNode[] = []
   let inCode = false
   let codeBuffer: string[] = []
+  let inTable = false
+  let tableRows: string[][] = []
   let key = 0
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i]
     const trimmed = raw.trimStart()
 
+    // 1. Handle Code Blocks
     if (trimmed.startsWith("```")) {
       if (inCode) {
         nodes.push(
@@ -180,21 +312,45 @@ function parseMarkdownToPdf(md: string): React.ReactNode[] {
       continue
     }
 
-    if (trimmed.startsWith("### ")) {
-      nodes.push(<Text key={key++} style={styles.h3}>{trimmed.slice(4)}</Text>)
+    // 2. Handle Tables
+    if (trimmed.startsWith("|")) {
+      inTable = true
+      const cells = trimmed
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+
+      const isSeparator = cells.every((cell) => /^-+$/.test(cell) || cell === "")
+      if (!isSeparator) {
+        tableRows.push(cells)
+      }
+      continue
+    } else if (inTable) {
+      if (tableRows.length > 0) {
+        nodes.push(renderTablePdf(tableRows, key++))
+      }
+      tableRows = []
+      inTable = false
+    }
+
+    // 3. Handle Regular Markdown
+    if (trimmed.startsWith("#### ")) {
+      nodes.push(renderFormattedText(trimmed.slice(5), styles.h4))
+    } else if (trimmed.startsWith("### ")) {
+      nodes.push(renderFormattedText(trimmed.slice(4), styles.h3))
     } else if (trimmed.startsWith("## ")) {
-      nodes.push(<Text key={key++} style={styles.h2}>{trimmed.slice(3)}</Text>)
+      nodes.push(renderFormattedText(trimmed.slice(3), styles.h2))
     } else if (trimmed.startsWith("> ")) {
       nodes.push(
         <View key={key++} style={styles.blockquote}>
-          <Text>{trimmed.slice(2)}</Text>
+          {renderFormattedText(trimmed.slice(2))}
         </View>
       )
     } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
       nodes.push(
         <View key={key++} style={styles.listItem}>
           <Text style={styles.bullet}>{"\u2022"}</Text>
-          <Text style={styles.listText}>{trimmed.slice(2)}</Text>
+          {renderFormattedText(trimmed.slice(2), styles.listText)}
         </View>
       )
     } else if (/^\d+\.\s/.test(trimmed)) {
@@ -203,17 +359,21 @@ function parseMarkdownToPdf(md: string): React.ReactNode[] {
         nodes.push(
           <View key={key++} style={styles.listItem}>
             <Text style={styles.bullet}>{num[1]}.</Text>
-            <Text style={styles.listText}>{num[2]}</Text>
+            {renderFormattedText(num[2], styles.listText)}
           </View>
         )
       }
     } else if (trimmed === "") {
       // blank line
     } else {
-      nodes.push(<Text key={key++} style={styles.p}>{trimmed}</Text>)
+      nodes.push(renderFormattedText(trimmed, styles.p))
     }
   }
 
+  // Handle trailing table or code block
+  if (inTable && tableRows.length > 0) {
+    nodes.push(renderTablePdf(tableRows, key++))
+  }
   if (inCode && codeBuffer.length > 0) {
     nodes.push(
       <View key={key++} style={styles.codeBlock}>
