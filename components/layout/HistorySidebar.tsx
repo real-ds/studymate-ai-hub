@@ -28,6 +28,7 @@ export default function HistorySidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [items, setItems] = useState<HistoryItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [displayLimit, setDisplayLimit] = useState(6)
 
   const fetchHistory = useCallback(async () => {
     setLoading(true)
@@ -44,6 +45,7 @@ export default function HistorySidebar() {
           feature: r.feature,
           date: formatDate(r.createdAt),
           status: r.status as HistoryItem["status"],
+          fileUrl: r.fileUrl,
         }))
       )
     } catch {
@@ -56,6 +58,7 @@ export default function HistorySidebar() {
   useEffect(() => {
     if (isFeaturePage(pathname) && session?.user?.email) {
       setItems([])
+      setDisplayLimit(6)
       fetchHistory()
     }
   }, [pathname, session?.user?.email, fetchHistory])
@@ -123,7 +126,7 @@ export default function HistorySidebar() {
             <p className="px-2 text-xs text-mutedText">No history yet</p>
           ) : (
             <div className="space-y-1">
-              {items.map((item) => (
+              {items.slice(0, displayLimit).map((item) => (
                 <HistorySidebarItem
                   key={item.id}
                   {...item}
@@ -131,6 +134,17 @@ export default function HistorySidebar() {
                   onDelete={handleDelete}
                 />
               ))}
+              {items.length > displayLimit && (
+                <div className="pt-2 px-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-xs text-stone-500 hover:text-stone-900 border-none outline-none focus:outline-none focus:ring-0 active:outline-none shadow-none bg-transparent hover:bg-stone-100"
+                    onClick={() => setDisplayLimit((prev) => prev + 10)}
+                  >
+                    View More
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

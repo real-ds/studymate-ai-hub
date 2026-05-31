@@ -77,40 +77,72 @@ export async function DELETE(
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await params // fileRecordId
 
-    const existing = await db
+    // Find the file record to delete
+    const record = await db
       .select()
-      .from(sessionsOutput)
+      .from(fileRecords)
       .where(
         and(
-          eq(sessionsOutput.id, id),
-          eq(sessionsOutput.userId, session.user.id)
+          eq(fileRecords.id, id),
+          eq(fileRecords.userId, session.user.id)
         )
       )
       .then((rows) => rows[0] ?? null)
 
-    if (!existing) {
+    if (!record) {
       return Response.json({ error: "Not found" }, { status: 404 })
     }
 
-    if (existing.fileRecordId) {
-      await db
-        .delete(fileRecords)
-        .where(
-          and(
-            eq(fileRecords.id, existing.fileRecordId),
-            eq(fileRecords.userId, session.user.id)
-          )
+    // Find referencing sessions outputs to check for pdfUrls
+    const sessions = await db
+      .select()
+      .from(sessionsOutput)
+      .where(
+        and(
+          eq(sessionsOutput.fileRecordId, id),
+          eq(sessionsOutput.userId, session.user.id)
         )
+      )
+
+    const { deleteFile } = await import("@/lib/storage/blob")
+
+    // Delete the original uploaded file from storage
+    try {
+      await deleteFile(record.fileUrl)
+    } catch (err) {
+      console.error("Failed to delete physical file:", err)
     }
 
+    // Delete any generated PDF files from storage if present
+    for (const sessionOutput of sessions) {
+      if (sessionOutput.pdfUrl) {
+        try {
+          await deleteFile(sessionOutput.pdfUrl)
+        } catch (err) {
+          console.error("Failed to delete generated PDF:", err)
+        }
+      }
+    }
+
+    // Delete sessions outputs explicitly first to ensure no constraint violations
     await db
       .delete(sessionsOutput)
       .where(
         and(
-          eq(sessionsOutput.id, id),
+          eq(sessionsOutput.fileRecordId, id),
           eq(sessionsOutput.userId, session.user.id)
+        )
+      )
+
+    // Delete the file record from database
+    await db
+      .delete(fileRecords)
+      .where(
+        and(
+          eq(fileRecords.id, id),
+          eq(fileRecords.userId, session.user.id)
         )
       )
 

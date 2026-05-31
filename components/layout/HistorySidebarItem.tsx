@@ -7,6 +7,8 @@ import {
   Share2,
   FileEdit,
   Trash2,
+  Eye,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,6 +27,7 @@ export type HistoryItem = {
   feature: keyof typeof featureIcons
   date: string
   status: "done" | "failed" | "pending"
+  fileUrl?: string
 }
 
 interface HistorySidebarItemProps extends HistoryItem {
@@ -69,22 +72,51 @@ export default function HistorySidebarItem({
       </div>
       <span
         className={cn(
-          "size-2 shrink-0 rounded-full",
+          "size-2 shrink-0 rounded-full group-hover:hidden",
           statusColors[status]
         )}
       />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className="opacity-0 group-hover:opacity-100"
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete?.(id)
-        }}
-        aria-label="Delete history item"
-      >
-        <Trash2 className="size-3" />
-      </Button>
+      <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
+          onClick={(e) => {
+            e.stopPropagation()
+            window.open(`/api/history/${id}/file`, "_blank")
+          }}
+          title="View File"
+          aria-label="View original file"
+        >
+          <Eye className="size-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
+          onClick={(e) => {
+            e.stopPropagation()
+            window.location.href = `/api/history/${id}/file?download=true`
+          }}
+          title="Download File"
+          aria-label="Download original file"
+        >
+          <Download className="size-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete?.(id)
+          }}
+          title="Delete"
+          aria-label="Delete history item"
+        >
+          <Trash2 className="size-3" />
+        </Button>
+      </div>
     </div>
   )
 }

@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         status: r.status,
         createdAt: r.createdAt?.toISOString() ?? new Date().toISOString(),
         fileType: r.fileType,
+        fileUrl: r.fileUrl,
       })),
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
     )
