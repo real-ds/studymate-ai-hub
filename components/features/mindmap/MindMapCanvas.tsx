@@ -24,17 +24,27 @@ const NODE_HEIGHT = 60
 
 function flattenTree(
   node: MindMapNodeType,
+  expandedNodeIds: Set<string>,
   parentId: string | null = null,
   depth: number = 0,
   nodes: Node[] = [],
   edges: Edge[] = []
 ) {
   const nodeId = node.id || `node-${nodes.length}`
+  const hasChildren = !!(node.children && node.children.length > 0)
+  const isExpanded = expandedNodeIds.has(nodeId)
+
   nodes.push({
     id: nodeId,
     type: "mindMapNode",
     position: { x: 0, y: 0 },
-    data: { label: node.label, detail: node.detail || "", depth },
+    data: {
+      label: node.label,
+      detail: node.detail || "",
+      depth,
+      hasChildren,
+      isExpanded,
+    },
   })
 
   if (parentId) {
@@ -49,8 +59,10 @@ function flattenTree(
     })
   }
 
-  if (node.children) {
-    node.children.forEach((child) => flattenTree(child, nodeId, depth + 1, nodes, edges))
+  if (hasChildren && isExpanded && node.children) {
+    node.children.forEach((child) => {
+      flattenTree(child, expandedNodeIds, nodeId, depth + 1, nodes, edges)
+    })
   }
 
   return { nodes, edges }
@@ -63,13 +75,23 @@ interface MindMapCanvasProps {
 export default function MindMapCanvas({ data }: MindMapCanvasProps) {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNode, setSelectedNode] = useState<MindMapNodeType | null>(null)
+  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set())
 
-  const { nodes: flatNodes, edges: flatEdges } = useMemo(() => flattenTree(data), [data])
+  // Reset/initialize expandedNodeIds to only contain root node
+  useEffect(() => {
+    if (data) {
+      setExpandedNodeIds(new Set([data.id || "root"]))
+    }
+  }, [data])
+
+  const { nodes: flatNodes, edges: flatEdges } = useMemo(() => {
+    return flattenTree(data, expandedNodeIds)
+  }, [data, expandedNodeIds])
 
   const layouted = useMemo(() => {
     const dagreGraph = new dagre.graphlib.Graph()
     dagreGraph.setDefaultEdgeLabel(() => ({}))
-    dagreGraph.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 100 })
+    dagreGraph.setGraph({ rankdir: "LR", nodesep: 60, ranksep: 100 })
 
     flatNodes.forEach((node) => {
       dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
@@ -101,6 +123,21 @@ export default function MindMapCanvas({ data }: MindMapCanvasProps) {
     setEdges(flatEdges)
   }, [layouted, flatEdges, setNodes, setEdges])
 
+  // Center on root node by default when ReactFlow is initialized or layout changes
+  useEffect(() => {
+    if (reactFlowInstance && layouted.length > 0) {
+      const rootNode = layouted[0]
+      const timer = setTimeout(() => {
+        reactFlowInstance.setCenter(
+          rootNode.position.x + NODE_WIDTH / 2,
+          rootNode.position.y + NODE_HEIGHT / 2,
+          { zoom: 1.1, duration: 400 }
+        )
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [reactFlowInstance, layouted])
+
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       const findNode = (n: MindMapNodeType): MindMapNodeType | null => {
@@ -113,9 +150,34 @@ export default function MindMapCanvas({ data }: MindMapCanvasProps) {
         }
         return null
       }
-      setSelectedNode(findNode(data))
+      const matchedNode = findNode(data)
+      if (matchedNode) {
+        setSelectedNode(matchedNode)
+
+        // Toggle expansion if node has children
+        if (matchedNode.children && matchedNode.children.length > 0) {
+          setExpandedNodeIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(node.id)) {
+              next.delete(node.id)
+            } else {
+              next.add(node.id)
+            }
+            return next
+          })
+        }
+
+        // Center and zoom in on the clicked node
+        if (reactFlowInstance) {
+          reactFlowInstance.setCenter(
+            node.position.x + NODE_WIDTH / 2,
+            node.position.y + NODE_HEIGHT / 2,
+            { zoom: 1.2, duration: 600 }
+          )
+        }
+      }
     },
-    [data]
+    [data, reactFlowInstance]
   )
 
   return (
@@ -125,11 +187,10 @@ export default function MindMapCanvas({ data }: MindMapCanvasProps) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-      onInit={setReactFlowInstance}
-      
+        onInit={setReactFlowInstance}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
-        fitView
+        fitView={false}
         attributionPosition="bottom-left"
         minZoom={0.3}
         maxZoom={2}

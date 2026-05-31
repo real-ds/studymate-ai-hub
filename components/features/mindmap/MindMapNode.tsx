@@ -18,10 +18,15 @@ function MindMapNode({ data }: NodeProps) {
     <div
       className={`rounded-xl border-2 px-4 py-3 shadow-sm transition-shadow hover:shadow-md ${colors.bg} ${colors.border}`}
     >
-      <Handle type="target" position={Position.Top} className="!border-warmAmber !bg-warmAmber" />
+      <Handle type="target" position={Position.Left} className="!border-warmAmber !bg-warmAmber" />
       <div className="flex flex-col items-center">
         <span className={`whitespace-nowrap text-sm font-medium ${colors.text}`}>
           {data.label}
+          {data.hasChildren && (
+            <span className="ml-1.5 inline-block text-[10px] opacity-70">
+              {data.isExpanded ? "▼" : "▶"}
+            </span>
+          )}
         </span>
         {data.detail && (
           <span className="mt-1 max-w-48 text-xs opacity-70 line-clamp-2">
@@ -29,7 +34,7 @@ function MindMapNode({ data }: NodeProps) {
           </span>
         )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!border-warmAmber !bg-warmAmber" />
+      <Handle type="source" position={Position.Right} className="!border-warmAmber !bg-warmAmber" />
     </div>
   )
 }
