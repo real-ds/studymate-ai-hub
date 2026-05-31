@@ -245,10 +245,10 @@ export function FlashcardsPDF({ cards }: { cards: Flashcard[] }) {
           {cards.map((card, i) => (
             <View key={i} style={styles.card} wrap={false}>
               <View style={styles.cardFront}>
-                <Text>
-                  <Text style={styles.cardNumber}>{i + 1}</Text>
-                  {card.front}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                  <Text style={{ color: "#C8A96E", fontWeight: "bold", width: 22, fontSize: 10 }}>{i + 1}.</Text>
+                  <Text style={{ flex: 1, fontWeight: "bold", fontSize: 10, color: "#1C1C1E" }}>{card.front}</Text>
+                </View>
               </View>
               <View style={styles.cardBack}>
                 <Text>{card.back}</Text>
