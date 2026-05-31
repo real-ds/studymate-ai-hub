@@ -19,7 +19,7 @@ function renderMarkdown(text: string): string {
     .replace(/^- (.+)$/gm, "<li class=\"ml-5 list-disc text-stone-700 leading-relaxed\">$1</li>")
     .replace(/^(\d+)\. (.+)$/gm, "<li class=\"ml-5 list-decimal text-stone-700 leading-relaxed\">$2</li>")
     .replace(/^---$/gm, "<hr class=\"my-6 border-stone-200\" />")
-    .replace(/```(\w*)\n([\s\S]*?)```/g, "<pre class=\"my-4 overflow-x-auto rounded-lg bg-stone-900 p-4 text-sm text-stone-100\"><code>$2</code></pre>")
+    .replace(/```(\w*)\n([\s\S]*?)```/g, "<pre class=\"my-4 overflow-x-auto rounded-lg bg-stone-100 border border-stone-200 p-4 text-sm font-mono text-stone-800\"><code>$2</code></pre>")
     .replace(/`([^`]+)`/g, "<code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-sm font-mono text-stone-800\">$1</code>")
     .replace(/^(?!<[hlpcdh]|<li|<di|<pre)(.+)$/gm, (match: string) => {
       const trimmed = match.trim()

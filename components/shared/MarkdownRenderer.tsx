@@ -189,7 +189,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
             return (
               <pre
                 key={idx}
-                className="mb-3 overflow-x-auto rounded-lg bg-warmOffWhite p-3 text-sm"
+                className="mb-3 overflow-x-auto rounded-lg bg-stone-100 border border-stone-200 p-3 text-sm font-mono text-stone-800"
               >
                 <code>{block.children[0]?.text}</code>
               </pre>

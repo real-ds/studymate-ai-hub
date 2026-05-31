@@ -4,11 +4,17 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adapter: DrizzleAdapter(db as any, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  } as any),
   session: { strategy: "jwt" },
   trustHost: true,
   pages: {

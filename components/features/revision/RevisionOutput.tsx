@@ -18,6 +18,7 @@ function renderRevisionMarkdown(text: string): string {
     .replace(/^- (.+)$/gm, "<li class=\"ml-4 list-disc text-xs leading-relaxed text-stone-700\">$1</li>")
     .replace(/^(\d+)\. (.+)$/gm, "<li class=\"ml-4 list-decimal text-xs leading-relaxed text-stone-700\">$2</li>")
     .replace(/^---$/gm, "<hr class=\"my-3 border-stone-200\" />")
+    .replace(/```(\w*)\n([\s\S]*?)```/g, "<pre class=\"my-2 overflow-x-auto rounded bg-stone-100 border border-stone-200 p-2 text-xs font-mono text-stone-800\"><code>$2</code></pre>")
     .replace(/`([^`]+)`/g, "<code class=\"rounded bg-stone-100 px-1 py-0.5 text-xs font-mono text-stone-800\">$1</code>")
     .replace(/^(?!<[hlpcdh]|<li|<di|<pre)(.+)$/gm, (match: string) => {
       const trimmed = match.trim()
