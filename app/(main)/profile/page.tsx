@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { redirect } from "next/navigation"
 import ProfileCard from "@/components/profile/ProfileCard"
+import ThemeSelectorCard from "@/components/profile/ThemeSelectorCard"
 import ApiKeyManager from "@/components/profile/ApiKeyManager"
 import UsageStats from "@/components/profile/UsageStats"
 import PageHeader from "@/components/shared/PageHeader"
@@ -98,6 +99,7 @@ export default function ProfilePage() {
         </div>
       )}
       <ProfileCard />
+      <ThemeSelectorCard />
       <ApiKeyManager />
       <UsageStats stats={stats} />
       <Card>
