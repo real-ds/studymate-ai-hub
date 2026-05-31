@@ -53,6 +53,9 @@ export async function fetchFile(url: string): Promise<Buffer> {
     try {
       const { get } = await import("@vercel/blob")
       const response = await get(url, { access: "private" })
+      if (!response?.stream) {
+        throw new Error("No stream found on response")
+      }
       const chunks: Uint8Array[] = []
       const reader = response.stream.getReader()
       while (true) {
