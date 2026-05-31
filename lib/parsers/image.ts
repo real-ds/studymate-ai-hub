@@ -1,10 +1,8 @@
 import sharp from "sharp"
+import { fetchFile } from "@/lib/storage/blob"
 
 export async function parseImage(fileUrl: string): Promise<string> {
-  const response = await fetch(fileUrl)
-  if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
-  const arrayBuffer = await response.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
+  const buffer = await fetchFile(fileUrl)
 
   const resized = await sharp(buffer)
     .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })

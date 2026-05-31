@@ -1,9 +1,8 @@
+import { fetchFile } from "@/lib/storage/blob"
+
 export async function parsePPTX(fileUrl: string): Promise<string> {
   try {
-    const response = await fetch(fileUrl)
-    if (!response.ok) throw new Error(`Failed to fetch PPTX: ${response.statusText}`)
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const buffer = await fetchFile(fileUrl)
 
     const JSZip = (await import("jszip")).default
     const zip = await JSZip.loadAsync(buffer)

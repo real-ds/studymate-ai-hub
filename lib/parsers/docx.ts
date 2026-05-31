@@ -1,9 +1,8 @@
 import mammoth from "mammoth"
+import { fetchFile } from "@/lib/storage/blob"
 
 export async function parseDOCX(fileUrl: string): Promise<string> {
-  const response = await fetch(fileUrl)
-  if (!response.ok) throw new Error(`Failed to fetch DOCX: ${response.statusText}`)
-  const arrayBuffer = await response.arrayBuffer()
-  const result = await mammoth.extractRawText({ arrayBuffer })
+  const buffer = await fetchFile(fileUrl)
+  const result = await mammoth.extractRawText({ buffer })
   return result.value
 }

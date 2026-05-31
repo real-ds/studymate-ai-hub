@@ -37,7 +37,7 @@ export async function uploadFile(
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     try {
       const { put } = await import("@vercel/blob")
-      const blob = await put(fileName, buffer, { access: "public" })
+      const blob = await put(fileName, buffer, { access: "private" })
       return { url: blob.url }
     } catch (err) {
       console.warn("Vercel Blob upload failed, falling back to local storage:", err)
@@ -46,6 +46,30 @@ export async function uploadFile(
 
   const url = await saveLocally(buffer, fileName)
   return { url }
+}
+
+export async function fetchFile(url: string): Promise<Buffer> {
+  if (url.includes("blob.vercel-storage.com") && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { get } = await import("@vercel/blob")
+      const response = await get(url, { access: "private" })
+      const chunks: Uint8Array[] = []
+      const reader = response.stream.getReader()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+      }
+      return Buffer.concat(chunks.map(c => Buffer.from(c)))
+    } catch (err) {
+      console.warn("Vercel Blob fetch failed, falling back to network fetch:", err)
+    }
+  }
+
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Failed to fetch file: ${response.statusText}`)
+  const arrayBuffer = await response.arrayBuffer()
+  return Buffer.from(arrayBuffer)
 }
 
 export async function deleteFile(url: string): Promise<void> {
