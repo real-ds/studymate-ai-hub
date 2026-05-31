@@ -14,10 +14,12 @@ export default function NotesPageClient() {
   const [isLoading, setIsLoading] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [mode, setMode] = useState<"compact" | "detailed">("detailed")
+  const [error, setError] = useState<string | null>(null)
 
   const handleUploadComplete = useCallback((id: string) => {
     setFileRecordId(id)
     setOutput("")
+    setError(null)
   }, [])
 
   const handleGenerate = async () => {
@@ -25,6 +27,7 @@ export default function NotesPageClient() {
     setIsLoading(true)
     setIsStreaming(true)
     setOutput("")
+    setError(null)
 
     try {
       const response = await fetch("/api/features/notes", {
@@ -49,6 +52,7 @@ export default function NotesPageClient() {
       }
     } catch (err) {
       console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to generate notes")
     } finally {
       setIsLoading(false)
       setIsStreaming(false)
@@ -63,6 +67,22 @@ export default function NotesPageClient() {
       />
 
       <FileDropzone feature="notes" onUploadComplete={handleUploadComplete} />
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <p className="font-semibold">Generation Failed</p>
+          <p className="mt-1">{error}</p>
+          {error.includes("API key") && (
+            <p className="mt-2 text-xs font-semibold text-red-700">
+              Go to your{" "}
+              <a href="/profile" className="underline hover:text-red-900">
+                Profile
+              </a>{" "}
+              and configure your Gemini API key to start using this feature.
+            </p>
+          )}
+        </div>
+      )}
 
       {fileRecordId && (
         <div className="mt-6 flex flex-wrap items-center gap-4">

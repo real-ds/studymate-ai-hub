@@ -16,15 +16,18 @@ export default function MindMapPageClient() {
   const [mindMap, setMindMap] = useState<MindMapNode | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleUploadComplete = useCallback((id: string) => {
     setFileRecordId(id)
     setMindMap(null)
+    setError(null)
   }, [])
 
   const handleGenerate = async () => {
     if (!fileRecordId) return
     setIsLoading(true)
+    setError(null)
 
     try {
       const response = await fetch("/api/features/mindmap", {
@@ -42,6 +45,7 @@ export default function MindMapPageClient() {
       setMindMap(data.mindMap || null)
     } catch (err) {
       console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to generate mind map")
     } finally {
       setIsLoading(false)
     }
@@ -71,6 +75,22 @@ export default function MindMapPageClient() {
       />
 
       <FileDropzone feature="mindmap" onUploadComplete={handleUploadComplete} />
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <p className="font-semibold">Generation Failed</p>
+          <p className="mt-1">{error}</p>
+          {error.includes("API key") && (
+            <p className="mt-2 text-xs font-semibold text-red-700">
+              Go to your{" "}
+              <a href="/profile" className="underline hover:text-red-900">
+                Profile
+              </a>{" "}
+              and configure your Gemini API key to start using this feature.
+            </p>
+          )}
+        </div>
+      )}
 
       {fileRecordId && !mindMap && (
         <div className="mt-6">
