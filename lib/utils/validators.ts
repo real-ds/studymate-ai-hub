@@ -28,15 +28,3 @@ export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
-
-const API_KEY_PATTERNS: Record<string, RegExp> = {
-  gemini: /^AIza[0-9A-Za-z_-]{35,}$/,
-  openai: /^sk-[0-9A-Za-z]{20,}$/,
-  anthropic: /^sk-ant-[0-9A-Za-z]{20,}$/,
-};
-
-export function validateApiKeyFormat(provider: string, key: string): boolean {
-  const pattern = API_KEY_PATTERNS[provider.toLowerCase()];
-  if (!pattern) return false;
-  return pattern.test(key);
-}

@@ -28,6 +28,8 @@ export type HistoryItem = {
   date: string
   status: "done" | "failed" | "pending"
   fileUrl?: string
+  sessionId?: string | null
+  pdfUrl?: string | null
 }
 
 interface HistorySidebarItemProps extends HistoryItem {
@@ -47,6 +49,8 @@ export default function HistorySidebarItem({
   feature,
   date,
   status,
+  sessionId,
+  pdfUrl,
   onSelect,
   onDelete,
 }: HistorySidebarItemProps) {
@@ -77,7 +81,7 @@ export default function HistorySidebarItem({
         )}
       />
       <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-        {status === "done" && (
+        {status === "done" && sessionId && (
           <>
             <Button
               variant="ghost"
@@ -85,10 +89,10 @@ export default function HistorySidebarItem({
               className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
               onClick={(e) => {
                 e.stopPropagation()
-                window.open(`/api/history/${id}/file`, "_blank")
+                window.open(`/api/sessions/${sessionId}/pdf`, "_blank")
               }}
               title="View PDF"
-              aria-label="View converted PDF"
+              aria-label="View generated PDF"
             >
               <Eye className="size-3" />
             </Button>
@@ -98,10 +102,10 @@ export default function HistorySidebarItem({
               className="text-stone-500 hover:text-stone-900 hover:bg-stone-200"
               onClick={(e) => {
                 e.stopPropagation()
-                window.location.href = `/api/history/${id}/file?download=true`
+                window.location.href = `/api/sessions/${sessionId}/pdf?download=true`
               }}
               title="Download PDF"
-              aria-label="Download converted PDF"
+              aria-label="Download generated PDF"
             >
               <Download className="size-3" />
             </Button>

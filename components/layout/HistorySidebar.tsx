@@ -53,6 +53,8 @@ export default function HistorySidebar() {
           date: formatDate(r.createdAt),
           status: r.status as HistoryItem["status"],
           fileUrl: r.fileUrl,
+          sessionId: r.sessionId,
+          pdfUrl: r.pdfUrl,
         }))
       )
     } catch {

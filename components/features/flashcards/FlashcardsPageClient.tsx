@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import FileDropzone from "@/components/upload/FileDropzone"
 import PageHeader from "@/components/shared/PageHeader"
 import FlashCardDeck from "./FlashCardDeck"
+import ProgressBar from "@/components/shared/ProgressBar"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import DownloadButton from "@/components/shared/DownloadButton"
 import type { Flashcard } from "@/types/feature.types"
+
+type ProgressPhase = "Starting..." | "Analysing..." | "Generating..." | "Done!"
 
 export default function FlashcardsPageClient() {
   const [fileRecordId, setFileRecordId] = useState<string | null>(null)
@@ -15,6 +18,31 @@ export default function FlashcardsPageClient() {
   const [isLoading, setIsLoading] = useState(false)
   const [cardCount, setCardCount] = useState(10)
   const [error, setError] = useState<string | null>(null)
+
+  const [progressPercent, setProgressPercent] = useState(0)
+  const [progressPhase, setProgressPhase] = useState<ProgressPhase>("Starting...")
+
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startProgressSimulation = useCallback(() => {
+    let percent = 10
+    setProgressPercent(10)
+    setProgressPhase("Analysing...")
+    let steps = 0
+
+    const interval = setInterval(() => {
+      steps++
+      if (steps < 5) {
+        percent = Math.min(percent + 8, 40)
+      } else {
+        if (steps === 5) setProgressPhase("Generating...")
+        percent = Math.min(percent + 2 + Math.random() * 4, 90)
+      }
+      setProgressPercent(Math.round(percent))
+    }, 1000)
+
+    progressIntervalRef.current = interval
+  }, [])
 
   const handleUploadComplete = useCallback((id: string) => {
     setFileRecordId(id)
@@ -25,7 +53,12 @@ export default function FlashcardsPageClient() {
   const handleGenerate = async () => {
     if (!fileRecordId) return
     setIsLoading(true)
+    setFlashcards([])
     setError(null)
+    setProgressPercent(0)
+    setProgressPhase("Starting...")
+
+    startProgressSimulation()
 
     try {
       const response = await fetch("/api/features/flashcards", {
@@ -41,13 +74,27 @@ export default function FlashcardsPageClient() {
 
       const data = await response.json()
       setFlashcards(data.flashcards || [])
+      setProgressPercent(100)
+      setProgressPhase("Done!")
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : "Failed to generate flashcards")
     } finally {
       setIsLoading(false)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -62,15 +109,6 @@ export default function FlashcardsPageClient() {
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
           <p className="font-semibold">Generation Failed</p>
           <p className="mt-1">{error}</p>
-          {error.includes("API key") && (
-            <p className="mt-2 text-xs font-semibold text-red-700">
-              Go to your{" "}
-              <a href="/profile" className="underline hover:text-red-900">
-                Profile
-              </a>{" "}
-              and configure your Gemini API key to start using this feature.
-            </p>
-          )}
         </div>
       )}
 
@@ -100,8 +138,8 @@ export default function FlashcardsPageClient() {
       )}
 
       {isLoading && (
-        <div className="mt-12 flex justify-center">
-          <LoadingSpinner size={32} />
+        <div className="mt-8">
+          <ProgressBar percent={progressPercent} phase={progressPhase} />
         </div>
       )}
 

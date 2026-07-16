@@ -1,15 +1,18 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { toPng } from "html-to-image"
 import FileDropzone from "@/components/upload/FileDropzone"
 import PageHeader from "@/components/shared/PageHeader"
 import MindMapCanvas from "./MindMapCanvas"
+import ProgressBar from "@/components/shared/ProgressBar"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import DownloadButton from "@/components/shared/DownloadButton"
 import { ImageDown } from "lucide-react"
 import type { MindMapNode } from "@/types/feature.types"
+
+type ProgressPhase = "Starting..." | "Analysing..." | "Generating..." | "Done!"
 
 export default function MindMapPageClient() {
   const [fileRecordId, setFileRecordId] = useState<string | null>(null)
@@ -17,6 +20,29 @@ export default function MindMapPageClient() {
   const [isLoading, setIsLoading] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [progressPercent, setProgressPercent] = useState(0)
+  const [progressPhase, setProgressPhase] = useState<ProgressPhase>("Starting...")
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startProgressSimulation = useCallback(() => {
+    let percent = 10
+    setProgressPercent(10)
+    setProgressPhase("Analysing...")
+    let steps = 0
+
+    const interval = setInterval(() => {
+      steps++
+      if (steps < 5) {
+        percent = Math.min(percent + 8, 40)
+      } else {
+        if (steps === 5) setProgressPhase("Generating...")
+        percent = Math.min(percent + 2 + Math.random() * 4, 90)
+      }
+      setProgressPercent(Math.round(percent))
+    }, 1000)
+
+    progressIntervalRef.current = interval
+  }, [])
 
   const handleUploadComplete = useCallback((id: string) => {
     setFileRecordId(id)
@@ -28,6 +54,11 @@ export default function MindMapPageClient() {
     if (!fileRecordId) return
     setIsLoading(true)
     setError(null)
+    setMindMap(null)
+    setProgressPercent(0)
+    setProgressPhase("Starting...")
+
+    startProgressSimulation()
 
     try {
       const response = await fetch("/api/features/mindmap", {
@@ -43,13 +74,27 @@ export default function MindMapPageClient() {
 
       const data = await response.json()
       setMindMap(data.mindMap || null)
+      setProgressPercent(100)
+      setProgressPhase("Done!")
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : "Failed to generate mind map")
     } finally {
       setIsLoading(false)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   const handleExportPNG = async () => {
     if (!canvasRef.current) return
@@ -105,8 +150,8 @@ export default function MindMapPageClient() {
       )}
 
       {isLoading && (
-        <div className="mt-12 flex justify-center">
-          <LoadingSpinner size={32} />
+        <div className="mt-8">
+          <ProgressBar percent={progressPercent} phase={progressPhase} />
         </div>
       )}
 

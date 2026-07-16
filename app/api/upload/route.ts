@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
 import { fileRecords } from "@/lib/db/schema"
 import { uploadFile } from "@/lib/storage/blob"
+import { checkRateLimit } from "@/lib/rate-limiter"
 
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const rateLimitResponse = await checkRateLimit(`upload:${session.user.id}`, 10, 3600)
+    if (rateLimitResponse) return rateLimitResponse
 
     const formData = await request.formData()
     const file = formData.get("file") as File | null

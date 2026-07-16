@@ -2,6 +2,7 @@ import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai"
 import type { LLMProvider } from "./provider"
 
 export class GeminiProvider implements LLMProvider {
+  readonly name = "Gemini"
   private model: GenerativeModel
 
   constructor(apiKey: string, systemPrompt?: string) {

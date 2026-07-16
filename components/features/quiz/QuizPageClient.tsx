@@ -6,6 +6,7 @@ import FileDropzone from "@/components/upload/FileDropzone"
 import PageHeader from "@/components/shared/PageHeader"
 import QuizQuestion from "./QuizQuestion"
 import QuizResults from "./QuizResults"
+import ProgressBar from "@/components/shared/ProgressBar"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import type { QuizQuestion as QuizQuestionType } from "@/types/feature.types"
@@ -24,6 +25,9 @@ export default function QuizPageClient() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [progressPercent, setProgressPercent] = useState(0)
+  const [progressPhase, setProgressPhase] = useState<"Starting..." | "Analysing..." | "Generating..." | "Done!">("Starting...")
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const handleUploadComplete = useCallback((id: string) => {
     setFileRecordId(id)
@@ -32,6 +36,26 @@ export default function QuizPageClient() {
     setShowResults(false)
     setCurrentIndex(0)
     setAnsweredCurrent(false)
+  }, [])
+
+  const startProgressSimulation = useCallback(() => {
+    let percent = 10
+    setProgressPercent(10)
+    setProgressPhase("Analysing...")
+    let steps = 0
+
+    const interval = setInterval(() => {
+      steps++
+      if (steps < 5) {
+        percent = Math.min(percent + 8, 40)
+      } else {
+        if (steps === 5) setProgressPhase("Generating...")
+        percent = Math.min(percent + 2 + Math.random() * 4, 90)
+      }
+      setProgressPercent(Math.round(percent))
+    }, 1000)
+
+    progressIntervalRef.current = interval
   }, [])
 
   const handleGenerate = async () => {
@@ -43,6 +67,10 @@ export default function QuizPageClient() {
     setShowResults(false)
     setCurrentIndex(0)
     setAnsweredCurrent(false)
+    setProgressPercent(0)
+    setProgressPhase("Starting...")
+
+    startProgressSimulation()
 
     try {
       const response = await fetch("/api/features/quiz", {
@@ -62,6 +90,8 @@ export default function QuizPageClient() {
       const data = await response.json()
       const qs = data.questions || []
       setQuestions(qs)
+      setProgressPercent(100)
+      setProgressPhase("Done!")
 
       if (timer && qs.length > 0) {
         setTimeLeft(timer * qs.length)
@@ -71,6 +101,10 @@ export default function QuizPageClient() {
       setError(message)
     } finally {
       setIsLoading(false)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
     }
   }
 
@@ -118,6 +152,14 @@ export default function QuizPageClient() {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [timeLeft, showResults])
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -200,9 +242,8 @@ export default function QuizPageClient() {
       )}
 
       {isLoading && (
-        <div className="mt-16 flex flex-col items-center gap-3">
-          <LoadingSpinner size={28} />
-          <p className="text-sm text-mutedText">Generating your quiz...</p>
+        <div className="mt-8">
+          <ProgressBar percent={progressPercent} phase={progressPhase} />
         </div>
       )}
 

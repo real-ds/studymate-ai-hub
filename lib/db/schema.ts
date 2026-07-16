@@ -12,26 +12,26 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
   name: text("name"),
   email: text("email").unique().notNull(),
-  emailVerified: timestamp("email_verified", { mode: "date" }),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
-  passwordHash: text("password_hash"),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
-  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+  passwordHash: text("passwordHash"),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow(),
 });
 
 export const accounts = pgTable(
   "accounts",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    userId: uuid("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
     refresh_token: text("refresh_token"),
     access_token: text("access_token"),
     expires_at: integer("expires_at"),
@@ -47,9 +47,9 @@ export const accounts = pgTable(
 );
 
 export const sessions = pgTable("sessions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  sessionToken: text("session_token").unique().notNull(),
-  userId: uuid("user_id")
+  id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+  sessionToken: text("sessionToken").unique().notNull(),
+  userId: uuid("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
@@ -72,16 +72,16 @@ export const verificationTokens = pgTable(
 export const apiKeys = pgTable(
   "api_keys",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    userId: uuid("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     provider: text("provider").notNull(),
-    encryptedKey: text("encrypted_key").notNull(),
+    encryptedKey: text("encryptedKey").notNull(),
     label: text("label"),
-    isActive: boolean("is_active").default(true),
-    createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
-    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+    isActive: boolean("isActive").default(true),
+    createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow(),
   },
   (table) => ({
     userIdIdx: index("idx_api_keys_user_id").on(table.userId),
@@ -91,18 +91,18 @@ export const apiKeys = pgTable(
 export const fileRecords = pgTable(
   "file_records",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    userId: uuid("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    originalName: text("original_name").notNull(),
-    fileUrl: text("file_url").notNull(),
-    fileType: text("file_type").notNull(),
-    fileSize: integer("file_size"),
+    originalName: text("originalName").notNull(),
+    fileUrl: text("fileUrl").notNull(),
+    fileType: text("fileType").notNull(),
+    fileSize: integer("fileSize"),
     feature: text("feature").notNull(),
     status: text("status").default("pending"),
-    errorMessage: text("error_message"),
-    createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+    errorMessage: text("errorMessage"),
+    createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
   },
   (table) => ({
     userIdIdx: index("idx_file_records_user_id").on(table.userId),
@@ -113,18 +113,18 @@ export const fileRecords = pgTable(
 export const sessionsOutput = pgTable(
   "sessions_output",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    fileRecordId: uuid("file_record_id").references(() => fileRecords.id, {
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    fileRecordId: uuid("fileRecordId").references(() => fileRecords.id, {
       onDelete: "cascade",
     }),
-    userId: uuid("user_id")
+    userId: uuid("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     feature: text("feature").notNull(),
-    outputJson: jsonb("output_json"),
-    outputText: text("output_text"),
-    pdfUrl: text("pdf_url"),
-    createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+    outputJson: jsonb("outputJson"),
+    outputText: text("outputText"),
+    pdfUrl: text("pdfUrl"),
+    createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
   },
   (table) => ({
     userIdIdx: index("idx_sessions_output_user_id").on(table.userId),
@@ -132,6 +132,15 @@ export const sessionsOutput = pgTable(
       table.fileRecordId
     ),
   })
+);
+
+export const fileStorage = pgTable(
+  "file_storage",
+  {
+    id: text("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
+    data: text("data").notNull(),
+    mimeType: text("mime_type").notNull(),
+  }
 );
 
 export const schema = {
@@ -142,4 +151,5 @@ export const schema = {
   apiKeys,
   fileRecords,
   sessionsOutput,
+  fileStorage,
 };
