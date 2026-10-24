@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react"
 import { ChevronLeft, ChevronRight, History, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { parseJsonResponse } from "@/lib/http"
 import HistorySidebarItem, {
   type HistoryItem,
 } from "./HistorySidebarItem"
@@ -44,12 +45,12 @@ export default function HistorySidebar() {
         headers: { "Cache-Control": "no-cache" },
       })
       if (!res.ok) throw new Error("Failed to fetch")
-      const data = await res.json()
+      const data = await parseJsonResponse<Record<string, string>[]>(res)
       setItems(
         data.map((r: Record<string, string>) => ({
           id: r.id,
           filename: r.originalName,
-          feature: r.feature,
+          feature: r.feature as HistoryItem["feature"],
           date: formatDate(r.createdAt),
           status: r.status as HistoryItem["status"],
           fileUrl: r.fileUrl,

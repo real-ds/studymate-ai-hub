@@ -10,6 +10,7 @@ import ProgressBar from "@/components/shared/ProgressBar"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import type { QuizQuestion as QuizQuestionType } from "@/types/feature.types"
+import { parseJsonResponse, readApiError } from "@/lib/http"
 
 export default function QuizPageClient() {
   const [fileRecordId, setFileRecordId] = useState<string | null>(null)
@@ -83,11 +84,10 @@ export default function QuizPageClient() {
       })
 
       if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.error || "Failed to generate quiz")
+        throw new Error(await readApiError(response, "Failed to generate quiz"))
       }
 
-      const data = await response.json()
+      const data = await parseJsonResponse<{ questions?: QuizQuestionType[] }>(response)
       const qs = data.questions || []
       setQuestions(qs)
       setProgressPercent(100)

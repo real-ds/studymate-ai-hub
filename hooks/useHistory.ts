@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import type { HistoryItem, HistoryDetailResponse } from "@/types/history.types"
+import { parseJsonResponse } from "@/lib/http"
 
 interface UseHistoryReturn {
   history: HistoryItem[]
@@ -26,8 +27,8 @@ export function useHistory(): UseHistoryReturn {
       if (!res.ok) {
         throw new Error("Failed to fetch history")
       }
-      const data = await res.json()
-      setHistory(data.items ?? data)
+      const data = await parseJsonResponse<HistoryItem[] | { items?: HistoryItem[] }>(res)
+      setHistory(Array.isArray(data) ? data : data.items ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch history")
     } finally {
@@ -41,7 +42,7 @@ export function useHistory(): UseHistoryReturn {
       if (!res.ok) {
         throw new Error("Failed to fetch history item")
       }
-      return await res.json()
+      return await parseJsonResponse<HistoryDetailResponse>(res)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch history item")
       return null

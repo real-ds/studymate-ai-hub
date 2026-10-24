@@ -101,6 +101,10 @@ export async function fetchFile(url: string): Promise<Buffer> {
   // Handle local or remote URLs
   const response = await fetch(url)
   if (!response.ok) throw new Error(`Failed to fetch file: ${response.statusText}`)
+  const contentType = response.headers.get("content-type") ?? ""
+  if (contentType.includes("text/html")) {
+    throw new Error(`Expected a file but received an HTML page from ${url}`)
+  }
   const arrayBuffer = await response.arrayBuffer()
   return Buffer.from(arrayBuffer)
 }

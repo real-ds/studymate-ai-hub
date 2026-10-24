@@ -8,6 +8,7 @@ import ProgressBar from "@/components/shared/ProgressBar"
 import NotesPDFViewer from "./NotesPDFViewer"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
+import { readApiError } from "@/lib/http"
 
 type ProgressPhase =
   | "Starting..."
@@ -122,8 +123,7 @@ export default function NotesPageClient() {
       })
 
       if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.error || "Failed to generate notes")
+        throw new Error(await readApiError(response, "Failed to generate notes"))
       }
 
       const reader = response.body?.getReader()

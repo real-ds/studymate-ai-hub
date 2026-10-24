@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
+import { readApiError } from "@/lib/http"
 
 interface UseStreamReturn {
   streamData: string
@@ -41,8 +42,7 @@ export function useStream(): UseStreamReturn {
       })
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => null)
-        throw new Error(errData?.error || `Request failed with status ${res.status}`)
+        throw new Error(await readApiError(res, `Request failed with status ${res.status}`))
       }
 
       const reader = res.body?.getReader()

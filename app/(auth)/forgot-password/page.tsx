@@ -4,6 +4,7 @@ import { useState, FormEvent, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { parseJsonResponse, readApiError } from "@/lib/http"
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -26,10 +27,8 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        setError(data.error || "Something went wrong")
+        setError(await readApiError(res, "Something went wrong"))
         return
       }
 
@@ -61,13 +60,12 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email, otp }),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        setError(data.error || "Invalid OTP")
+        setError(await readApiError(res, "Invalid OTP"))
         return
       }
 
+      const data = await parseJsonResponse<{ resetToken?: string }>(res)
       router.push(`/reset-password?token=${data.resetToken}`)
     } catch {
       setError("Network error. Please try again.")

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { readApiError } from "@/lib/http"
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -48,8 +49,7 @@ export default function RegisterForm() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        setError(data.error || "Registration failed")
+        setError(await readApiError(res, "Registration failed"))
         return
       }
 

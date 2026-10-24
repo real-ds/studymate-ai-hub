@@ -10,6 +10,7 @@ import UsageStats from "@/components/profile/UsageStats"
 import PageHeader from "@/components/shared/PageHeader"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { parseJsonResponse } from "@/lib/http"
 
 interface ProfileStats {
   totalFiles: number
@@ -44,7 +45,10 @@ export default function ProfilePage() {
           headers: { "Cache-Control": "no-cache" },
         })
         if (!res.ok) throw new Error("Failed to fetch profile")
-        const data = await res.json()
+        const data = await parseJsonResponse<{
+          email?: string
+          stats?: { filesProcessed?: number; outputsGenerated?: number; features?: Record<string, number> }
+        }>(res)
 
         if (cancelled) return
 

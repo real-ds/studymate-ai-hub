@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { readApiError } from "@/lib/http"
 
 interface DownloadButtonProps
   extends Omit<React.ComponentPropsWithoutRef<typeof Button>, "children" | "onClick"> {
@@ -41,8 +42,7 @@ export default function DownloadButton({
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "Failed to generate PDF")
+        throw new Error(await readApiError(res, "Failed to generate PDF"))
       }
 
       const blob = await res.blob()

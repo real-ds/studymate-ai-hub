@@ -44,3 +44,6 @@ contextwindowlog-opencode.md #OpenCode Context Window
 contextwindowlog-opencode.md
 changelog.md #Changelog
 .vercel
+
+# local runtime uploads (never commit user-uploaded files)
+/public/uploads/

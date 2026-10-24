@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import DownloadButton from "@/components/shared/DownloadButton"
 import { ImageDown } from "lucide-react"
 import type { MindMapNode } from "@/types/feature.types"
+import { parseJsonResponse, readApiError } from "@/lib/http"
 
 type ProgressPhase = "Starting..." | "Analysing..." | "Generating..." | "Done!"
 
@@ -68,11 +69,10 @@ export default function MindMapPageClient() {
       })
 
       if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.error || "Failed to generate mind map")
+        throw new Error(await readApiError(response, "Failed to generate mind map"))
       }
 
-      const data = await response.json()
+      const data = await parseJsonResponse<{ mindMap?: MindMapNode }>(response)
       setMindMap(data.mindMap || null)
       setProgressPercent(100)
       setProgressPhase("Done!")

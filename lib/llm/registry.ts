@@ -1,96 +1,82 @@
 import type { LLMProvider } from "./provider"
-import { GroqProvider } from "./groq"
-import { HuggingFaceProvider } from "./huggingface"
+import { buildEndpointPool, getProviderConfigs } from "./config"
+import { GeminiProvider } from "./gemini"
+import { isCoolingDown, markCooldown, nextIndex, shouldCooldown } from "./pool"
 
-type ProviderFactory = () => LLMProvider
+interface ProviderFailure {
+  provider: string
+  error: unknown
+}
 
-export class ProviderRegistry {
-  private factories: ProviderFactory[] = []
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
 
-  constructor() {
-    this.register(() => new GroqProvider())
-    this.register(() => new HuggingFaceProvider())
-  }
+/**
+ * Round-robin registry across every configured (provider, model) endpoint.
+ *
+ * Each call starts at the next position of a shared cursor, so load is spread
+ * across providers/models instead of exhausting one key. Endpoints that return
+ * auth/rate-limit/server/network errors are parked in a cooldown window and
+ * skipped. If the entire pool fails, Gemini (when GEMINI_API_KEY is set) is
+ * used as the final fallback.
+ */
+export class RoundRobinRegistry {
+  private async run<T>(
+    method: string,
+    invoke: (provider: LLMProvider) => Promise<T>
+  ): Promise<T> {
+    const providers = buildEndpointPool(getProviderConfigs())
+    const failures: ProviderFailure[] = []
 
-  register(factory: ProviderFactory): void {
-    this.factories.push(factory)
-  }
+    if (providers.length > 0) {
+      const start = await nextIndex(providers.length)
 
-  private instantiateProviders(): LLMProvider[] {
-    const providers: LLMProvider[] = []
-    for (const factory of this.factories) {
-      try {
-        const provider = factory()
-        providers.push(provider)
-      } catch {
-        // provider threw (e.g. missing env var), skip it
+      for (let offset = 0; offset < providers.length; offset++) {
+        const provider = providers[(start + offset) % providers.length]
+
+        if (await isCoolingDown(provider.name)) continue
+
+        try {
+          return await invoke(provider)
+        } catch (err) {
+          if (shouldCooldown(err)) await markCooldown(provider.name)
+          console.warn(`[llm] ${method} via ${provider.name} failed: ${errorMessage(err)}`)
+          failures.push({ provider: provider.name, error: err })
+        }
       }
     }
-    return providers
-  }
 
-  async generateText(prompt: string): Promise<string> {
-    const providers = this.instantiateProviders()
-    if (providers.length === 0) {
-      throw new Error("No LLM providers available. Configure GROQ_API_KEY or HF_API_TOKEN.")
-    }
-    const errors: { provider: string; error: unknown }[] = []
-
-    for (const provider of providers) {
+    const gemini = GeminiProvider.fromEnv()
+    if (gemini && !(await isCoolingDown(gemini.name))) {
       try {
-        return await provider.generateText(prompt)
+        return await invoke(gemini)
       } catch (err) {
-        console.warn(`${provider.name} failed, trying next provider:`, err)
-        errors.push({ provider: provider.name, error: err })
+        if (shouldCooldown(err)) await markCooldown(gemini.name)
+        console.warn(`[llm] ${method} via Gemini fallback failed: ${errorMessage(err)}`)
+        failures.push({ provider: "Gemini", error: err })
       }
     }
 
-    throw new Error(
-      `All providers failed. Errors:\n${errors.map((e) => `  ${e.provider}: ${e.error instanceof Error ? e.error.message : String(e.error)}`).join("\n")}`
-    )
+    const detail =
+      failures.length > 0
+        ? failures.map((f) => `  ${f.provider}: ${errorMessage(f.error)}`).join("\n")
+        : "  no providers configured (set XKIRO_API_KEY / OPENROUTER_API_KEY / NVIDIA_API_KEY)"
+
+    throw new Error(`All LLM providers failed for ${method}.\n${detail}`)
   }
 
-  async generateStream(prompt: string): Promise<ReadableStream> {
-    const providers = this.instantiateProviders()
-    if (providers.length === 0) {
-      throw new Error("No LLM providers available. Configure GROQ_API_KEY or HF_API_TOKEN.")
-    }
-    const errors: { provider: string; error: unknown }[] = []
-
-    for (const provider of providers) {
-      try {
-        return await provider.generateStream(prompt)
-      } catch (err) {
-        console.warn(`${provider.name} stream failed, trying next provider:`, err)
-        errors.push({ provider: provider.name, error: err })
-      }
-    }
-
-    throw new Error(
-      `All providers failed.\n${errors.map((e) => `  ${e.provider}: ${e.error instanceof Error ? e.error.message : String(e.error)}`).join("\n")}`
-    )
+  generateText(prompt: string): Promise<string> {
+    return this.run("generateText", (provider) => provider.generateText(prompt))
   }
 
-  async generateJSON<T>(prompt: string): Promise<T> {
-    const providers = this.instantiateProviders()
-    if (providers.length === 0) {
-      throw new Error("No LLM providers available. Configure GROQ_API_KEY or HF_API_TOKEN.")
-    }
-    const errors: { provider: string; error: unknown }[] = []
+  generateStream(prompt: string): Promise<ReadableStream> {
+    return this.run("generateStream", (provider) => provider.generateStream(prompt))
+  }
 
-    for (const provider of providers) {
-      try {
-        return await provider.generateJSON<T>(prompt)
-      } catch (err) {
-        console.warn(`${provider.name} JSON generation failed, trying next provider:`, err)
-        errors.push({ provider: provider.name, error: err })
-      }
-    }
-
-    throw new Error(
-      `All providers failed.\n${errors.map((e) => `  ${e.provider}: ${e.error instanceof Error ? e.error.message : String(e.error)}`).join("\n")}`
-    )
+  generateJSON<T>(prompt: string): Promise<T> {
+    return this.run("generateJSON", (provider) => provider.generateJSON<T>(prompt))
   }
 }
 
-export const llm = new ProviderRegistry()
+export const llm = new RoundRobinRegistry()

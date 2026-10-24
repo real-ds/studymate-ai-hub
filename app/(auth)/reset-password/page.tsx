@@ -4,6 +4,7 @@ import { useState, FormEvent, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { readApiError } from "@/lib/http"
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams()
@@ -44,10 +45,8 @@ function ResetPasswordForm() {
         body: JSON.stringify({ token, password }),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        setError(data.error || "Something went wrong")
+        setError(await readApiError(res, "Something went wrong"))
         return
       }
 
