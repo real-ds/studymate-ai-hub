@@ -15,36 +15,24 @@ const DEFAULT_NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 // Free-tier friendly models only. All IDs verified against each provider's catalog.
 const DEFAULT_XKIRO_MODELS = [
-  "qwen/qwen3.8-max:free",
-  "qwen/qwen3.7-max:free",
-  "qwen/qwen3.7-flash:free",
-  "qwen/qwen3.6-plus:free",
-  "mistralai/mistral-large-2512",
-  "mistralai/mistral-medium-3.5",
-  "mistralai/ministral-14b",
-  "cohere/command-a-plus",
-  "cohere/command-a",
-  "meituan/longcat-2.0",
-  "sensenova/sensenova-6.8-flash-lite",
-  "stealth/big-pickle",
+  "qwen/qwen3.8-max:free",     // Pool index 0 → final pos 2
+  "qwen/qwen3.7-max:free",     // Pool index 1 → final pos 4
+  "qwen/qwen3.7-flash:free",   // Pool index 2 → final pos 6
+  "mistralai/mistral-medium-3.5",   // Pool index 3 → final pos 9
+  "qwen3.6-plus:free",         // Pool index 4 → final pos 10
+  "mistralai/mistral-small-2603",   // Pool index 5 → final pos 11
 ]
 
 const DEFAULT_OPENROUTER_MODELS = [
-  "google/gemma-4-31b-it:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "nvidia/nemotron-3.5-lightning:free",
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "cohere/north-mini-code:free",
-  "dots-studio/dots-3-note-preview:free",
-  "poolside/laguna-s-2.1:free",
-  "liquid/lfm-2.5-2.6b:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",   // Pool index 0 → final pos 1
+  "cohere/north-mini-code:free",              // Pool index 1 → final pos 5
+  "mistralai/mistral-large-2512",             // Pool index 2 → final pos 7
+  "google/gemma-4-31b-it:free",               // Pool index 3 → final pos 8
 ]
 
 const DEFAULT_NVIDIA_MODELS = [
-  "nvidia/nemotron-3.5-lightning-30b-a3b",
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-  "nvidia/nemotron-3-ultra-550b-a55b",
-  "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "nvidia/nemotron-3.5-lightning-30b-a3b",   // Pool index 0 → final pos 0
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", // Pool index 1 → final pos 3
 ]
 
 function splitList(value: string | undefined): string[] {
@@ -75,17 +63,20 @@ function openRouterAttribution(): Record<string, string> {
  * Reads provider configuration from environment variables. A provider is only
  * included when its API key is present, so keys stay server-side (env / Vercel)
  * and inactive providers are silently skipped.
+ *
+ * Provider order determines round-robin interleaving:
+ *   nvidia[0], openrouter[0], xkiro[0], nvidia[1], openrouter[1], xkiro[1], ...
  */
 export function getProviderConfigs(): ProviderConfig[] {
   const configs: ProviderConfig[] = []
 
-  const xkiroKey = process.env.XKIRO_API_KEY
-  if (xkiroKey) {
+  const nvidiaKey = process.env.NVIDIA_API_KEY
+  if (nvidiaKey) {
     configs.push({
-      id: "xkiro",
-      baseURL: process.env.XKIRO_BASE_URL || DEFAULT_XKIRO_BASE_URL,
-      apiKey: xkiroKey,
-      models: modelsFromEnv(process.env.XKIRO_MODELS, DEFAULT_XKIRO_MODELS),
+      id: "nvidia",
+      baseURL: process.env.NVIDIA_BASE_URL || DEFAULT_NVIDIA_BASE_URL,
+      apiKey: nvidiaKey,
+      models: modelsFromEnv(process.env.NVIDIA_MODELS, DEFAULT_NVIDIA_MODELS),
     })
   }
 
@@ -100,13 +91,13 @@ export function getProviderConfigs(): ProviderConfig[] {
     })
   }
 
-  const nvidiaKey = process.env.NVIDIA_API_KEY
-  if (nvidiaKey) {
+  const xkiroKey = process.env.XKIRO_API_KEY
+  if (xkiroKey) {
     configs.push({
-      id: "nvidia",
-      baseURL: process.env.NVIDIA_BASE_URL || DEFAULT_NVIDIA_BASE_URL,
-      apiKey: nvidiaKey,
-      models: modelsFromEnv(process.env.NVIDIA_MODELS, DEFAULT_NVIDIA_MODELS),
+      id: "xkiro",
+      baseURL: process.env.XKIRO_BASE_URL || DEFAULT_XKIRO_BASE_URL,
+      apiKey: xkiroKey,
+      models: modelsFromEnv(process.env.XKIRO_MODELS, DEFAULT_XKIRO_MODELS),
     })
   }
 

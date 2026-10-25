@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm"
 import { extractTextFromFile } from "@/lib/parsers"
 import { getQuizPrompt } from "@/lib/llm/prompts/quiz"
 import { llm } from "@/lib/llm/registry"
+import { LLMErrorType } from "@/lib/llm/errors"
 import type { QuizQuestion } from "@/types/feature.types"
 
 export async function POST(request: NextRequest) {
@@ -73,6 +74,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Quiz API error:", error)
     const message = error instanceof Error ? error.message : "Failed to generate quiz"
-    return Response.json({ error: message }, { status: 500 })
+    // Include model ID and error type if available
+    let enhancedMessage = message
+    if (error instanceof Error && 'modelId' in error && 'errorType' in error) {
+      // @ts-expect-error - LLMRequestError has extra properties
+      const typedError = error as { modelId: string; errorType: LLMErrorType }
+      const typePrefix = typedError.errorType === LLMErrorType.RATE_LIMIT ? 'Rate limited' : typedError.errorType === LLMErrorType.UNAVAILABLE ? 'Unavailable' : ''
+      enhancedMessage = `${typePrefix}: ${message} (model: ${typedError.modelId})`
+    }
+    return Response.json({ error: enhancedMessage }, { status: 500 })
   }
 }

@@ -2,10 +2,12 @@ import type { LLMProvider } from "./provider"
 import { buildEndpointPool, getProviderConfigs } from "./config"
 import { GeminiProvider } from "./gemini"
 import { isCoolingDown, markCooldown, nextIndex, shouldCooldown } from "./pool"
+import { toLLMError, LLMErrorType, getErrorClass } from "./errors"
 
 interface ProviderFailure {
   provider: string
-  error: unknown
+  error: LLMRequestError
+  modelId: string
 }
 
 function errorMessage(error: unknown): string {
@@ -40,9 +42,13 @@ export class RoundRobinRegistry {
         try {
           return await invoke(provider)
         } catch (err) {
-          if (shouldCooldown(err)) await markCooldown(provider.name)
-          console.warn(`[llm] ${method} via ${provider.name} failed: ${errorMessage(err)}`)
-          failures.push({ provider: provider.name, error: err })
+          const llmErr = toLLMError(provider.name, err, provider.modelId)
+          if (shouldCooldown(llmErr)) await markCooldown(provider.name)
+          console.warn(`[llm] ${method} via ${provider.name} failed: ${errorMessage(llmErr)}`)
+          failures.push({ provider: provider.name, error: llmErr, modelId: llmErr.modelId })
+          
+          // Re-throw the first error to propagate modelId and errorType up
+          if (failures.length === 1) throw llmErr
         }
       }
     }
@@ -52,15 +58,20 @@ export class RoundRobinRegistry {
       try {
         return await invoke(gemini)
       } catch (err) {
-        if (shouldCooldown(err)) await markCooldown(gemini.name)
-        console.warn(`[llm] ${method} via Gemini fallback failed: ${errorMessage(err)}`)
-        failures.push({ provider: "Gemini", error: err })
+        const llmErr = toLLMError(gemini.name, err, gemini.modelId)
+        if (shouldCooldown(llmErr)) await markCooldown(gemini.name)
+        console.warn(`[llm] ${method} via Gemini fallback failed: ${errorMessage(llmErr)}`)
+        failures.push({ provider: "Gemini", error: llmErr, modelId: llmErr.modelId })
+        
+        // Re-throw the first error to propagate modelId and errorType up
+        if (failures.length === 1) throw llmErr
       }
     }
 
+    // All providers failed - throw aggregated error with model info
     const detail =
       failures.length > 0
-        ? failures.map((f) => `  ${f.provider}: ${errorMessage(f.error)}`).join("\n")
+        ? failures.map((f) => `  ${f.provider} (${f.modelId || 'N/A'}): ${errorMessage(f.error)}`).join("\n")
         : "  no providers configured (set XKIRO_API_KEY / OPENROUTER_API_KEY / NVIDIA_API_KEY)"
 
     throw new Error(`All LLM providers failed for ${method}.\n${detail}`)

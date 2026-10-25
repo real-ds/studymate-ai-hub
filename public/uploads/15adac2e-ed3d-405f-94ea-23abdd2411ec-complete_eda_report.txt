@@ -1,0 +1,298 @@
+╔════════════════════════════════════════════════════════════╗
+║         COMPLETE 12-STEP EDA REPORT                        ║
+╚════════════════════════════════════════════════════════════╝
+
+STEP 2: STRUCTURE & SHAPE ANALYSIS
+═══════════════════════════════════════════════════════════
+Columns: Country, Population, YearlyChange, NetChange, Density, LandArea
+Column Count: 6
+Total Records: 233
+
+STEP 3: DATA QUALITY ASSESSMENT
+═══════════════════════════════════════════════════════════
+Clean Records: 233
+Unclean Records: 0
+
+STEP 4: DATA TYPE DETECTION
+═══════════════════════════════════════════════════════════
+Country : Categorical
+Population : Numeric
+YearlyChange : Numeric
+NetChange : Numeric
+Density : Numeric
+LandArea : Numeric
+
+STEP 5: STATISTICAL SUMMARY
+═══════════════════════════════════════════════════════════
+
+Column: Population
+  Count:      233
+  Mean:       35617248.02
+  Median:     5853949.00
+  Std Dev:    139454743.36
+  Min:        506.00
+  Q1:         469775.00
+  Q3:         24601700.00
+  Max:        1476625576.00
+
+Column: YearlyChange
+  Count:      233
+  Mean:       0.84
+  Median:     0.77
+  Std Dev:    1.20
+  Min:        -3.33
+  Q1:         -0.05
+  Q3:         1.78
+  Max:        3.37
+
+Column: NetChange
+  Count:      233
+  Mean:       296451.70
+  Median:     18406.00
+  Std Dev:    1066086.61
+  Min:        -3182005.00
+  Q1:         -47.00
+  Q3:         228682.00
+  Max:        12760051.00
+
+Column: Density
+  Count:      233
+  Mean:       489.09
+  Median:     100.00
+  Std Dev:    2402.93
+  Min:        0.00
+  Q1:         39.00
+  Q3:         255.00
+  Max:        25562.00
+
+Column: LandArea
+  Count:      233
+  Mean:       558342.66
+  Median:     82200.00
+  Std Dev:    1690629.85
+  Min:        0.00
+  Q1:         2830.00
+  Q3:         410340.00
+  Max:        16376870.00
+
+STEP 6: MISSING VALUE ANALYSIS
+═══════════════════════════════════════════════════════════
+Country : 229 (98.28%)
+Population : 0 (0.00%)
+YearlyChange : 0 (0.00%)
+NetChange : 0 (0.00%)
+Density : 0 (0.00%)
+LandArea : 0 (0.00%)
+
+STEP 7: DATA CLEANING
+═══════════════════════════════════════════════════════════
+✓ CSV cleaned and saved to wp_cleaned.csv
+✓ Encoding issues fixed (â → -)
+
+STEP 8: UNIVARIATE ANALYSIS
+═══════════════════════════════════════════════════════════
+
+Column: Population
+  Distribution: Right-Skewed (Positively Skewed)
+  Skewness: 8.9908
+  Kurtosis: 86.9935
+  Range: 506.00 to 1476625576.00
+  IQR: 24131925.00
+
+Column: YearlyChange
+  Distribution: Approximately Symmetric
+  Skewness: -0.1013
+  Kurtosis: 0.0924
+  Range: -3.33 to 3.37
+  IQR: 1.83
+
+Column: NetChange
+  Distribution: Right-Skewed (Positively Skewed)
+  Skewness: 7.5812
+  Kurtosis: 80.7424
+  Range: -3182005.00 to 12760051.00
+  IQR: 228729.00
+
+Column: Density
+  Distribution: Right-Skewed (Positively Skewed)
+  Skewness: 9.2060
+  Kurtosis: 88.6939
+  Range: 0.00 to 25562.00
+  IQR: 216.00
+
+Column: LandArea
+  Distribution: Right-Skewed (Positively Skewed)
+  Skewness: 6.0206
+  Kurtosis: 42.1000
+  Range: 0.00 to 16376870.00
+  IQR: 407510.00
+
+STEP 9: BIVARIATE ANALYSIS
+═══════════════════════════════════════════════════════════
+Correlation Matrix:
+  Population <-> Population : 1.0000
+  Population <-> YearlyChange : 0.0029
+  YearlyChange <-> YearlyChange : 1.0000
+  NetChange <-> Population : 0.5311
+  NetChange <-> YearlyChange : 0.2652
+  NetChange <-> NetChange : 1.0000
+  Density <-> Population : -0.0255
+  Density <-> YearlyChange : -0.0901
+  Density <-> NetChange : -0.0288
+  Density <-> Density : 1.0000
+  Density <-> LandArea : -0.0585
+  LandArea <-> Population : 0.4474
+  LandArea <-> YearlyChange : 0.0179
+  LandArea <-> NetChange : 0.0933
+  LandArea <-> LandArea : 1.0000
+
+STEP 10: MULTIVARIATE ANALYSIS
+═══════════════════════════════════════════════════════════
+Variable Relationships:
+  Strongest Correlations: 0.5311 to 0.0029
+  Average Correlation: 0.1561
+
+STEP 11: OUTLIER DETECTION
+═══════════════════════════════════════════════════════════
+
+Column: Population
+  Lower Bound: -35728112.50, Upper Bound: 60799587.50
+  Outliers (IQR method): 24 (10.30%)
+    Outlier: India = 1476625576.00
+    Outlier: China = 1412914089.00
+    Outlier: United States = 349035494.00
+    Outlier: Indonesia = 287886782.00
+    Outlier: Pakistan = 259299791.00
+    Outlier: Nigeria = 242431832.00
+    Outlier: Brazil = 213562666.00
+    Outlier: Bangladesh = 177818044.00
+    Outlier: Russia = 143394458.00
+    Outlier: Ethiopia = 138902185.00
+    Outlier: Mexico = 132997658.00
+    Outlier: Japan = 122427731.00
+    Outlier: Egypt = 120101175.00
+    Outlier: Philippines = 117724471.00
+    Outlier: DR Congo = 116452162.00
+    Outlier: Vietnam = 102177431.00
+    Outlier: Iran = 93168497.00
+    Outlier: Turkey = 87926082.00
+    Outlier: Germany = 83644258.00
+    Outlier: Tanzania = 72563780.00
+    Outlier: Thailand = 71559614.00
+    Outlier: United Kingdom = 69931528.00
+    Outlier: France = 66746401.00
+    Outlier: South Africa = 65453084.00
+
+Column: YearlyChange
+  Lower Bound: -2.80, Upper Bound: 4.53
+  Outliers (IQR method): 2 (0.86%)
+
+Column: NetChange
+  Lower Bound: -343140.50, Upper Bound: 571775.50
+  Outliers (IQR method): 40 (17.17%)
+    Outlier: India = 12760051.00
+    Outlier: United States = 1759687.00
+    Outlier: Indonesia = 2165546.00
+    Outlier: Pakistan = 4080237.00
+    Outlier: Nigeria = 4904050.00
+    Outlier: Brazil = 750261.00
+    Outlier: Bangladesh = 2131145.00
+    Outlier: Ethiopia = 3430134.00
+    Outlier: Mexico = 1050758.00
+    Outlier: Egypt = 1735180.00
+    Outlier: Philippines = 937509.00
+    Outlier: DR Congo = 3619689.00
+    Outlier: Vietnam = 578904.00
+    Outlier: Iran = 750816.00
+    Outlier: Tanzania = 2017915.00
+    Outlier: South Africa = 705765.00
+    Outlier: Kenya = 1103919.00
+    Outlier: Sudan = 1620572.00
+    Outlier: Uganda = 1376575.00
+    Outlier: Algeria = 593022.00
+    Outlier: Iraq = 986663.00
+    Outlier: Afghanistan = 1202958.00
+    Outlier: Yemen = 1187775.00
+    Outlier: Angola = 1175140.00
+    Outlier: Uzbekistan = 670795.00
+    Outlier: Mozambique = 1008198.00
+    Outlier: Ghana = 633285.00
+    Outlier: Saudi Arabia = 599459.00
+    Outlier: Madagascar = 781374.00
+    Outlier: CÃ´te d'Ivoire = 782799.00
+    Outlier: Cameroon = 761480.00
+    Outlier: Niger = 897047.00
+    Outlier: Syria = 852070.00
+    Outlier: Mali = 733454.00
+    Outlier: Zambia = 608041.00
+    Outlier: Somalia = 651168.00
+
+Column: Density
+  Lower Bound: -285.00, Upper Bound: 579.00
+  Outliers (IQR method): 20 (8.58%)
+    Outlier: Bangladesh = 1366.00
+    Outlier: Taiwan = 650.00
+    Outlier: Rwanda = 604.00
+    Outlier: Hong Kong = 7027.00
+    Outlier: Singapore = 8437.00
+    Outlier: State of Palestine = 946.00
+    Outlier: Bahrain = 2205.00
+    Outlier: Mauritius = 623.00
+    Outlier: Macao = 24106.00
+    Outlier: Malta = 1716.00
+    Outlier: Maldives = 1772.00
+    Outlier: Mayotte = 927.00
+    Outlier: Barbados = 657.00
+    Outlier: Aruba = 601.00
+    Outlier: Bermuda = 1289.00
+    Outlier: Sint Maarten = 1307.00
+    Outlier: Gibraltar = 4087.00
+    Outlier: Monaco = 25562.00
+    Outlier: Nauru = 605.00
+    Outlier: Holy See = 1265.00
+
+Column: LandArea
+  Lower Bound: -608435.00, Upper Bound: 1021605.00
+  Outliers (IQR method): 27 (11.59%)
+    Outlier: India = 2973190.00
+    Outlier: China = 9388211.00
+    Outlier: United States = 9147420.00
+    Outlier: Indonesia = 1811570.00
+    Outlier: Brazil = 8358140.00
+    Outlier: Russia = 16376870.00
+    Outlier: Mexico = 1943950.00
+    Outlier: DR Congo = 2267050.00
+    Outlier: Iran = 1628550.00
+    Outlier: South Africa = 1213090.00
+    Outlier: Colombia = 1109500.00
+    Outlier: Sudan = 1765048.00
+    Outlier: Algeria = 2381740.00
+    Outlier: Argentina = 2736690.00
+    Outlier: Canada = 9093510.00
+    Outlier: Angola = 1246700.00
+    Outlier: Saudi Arabia = 2149690.00
+    Outlier: Peru = 1280000.00
+    Outlier: Niger = 1266700.00
+    Outlier: Australia = 7682300.00
+    Outlier: Mali = 1220190.00
+    Outlier: Chad = 1259200.00
+    Outlier: Kazakhstan = 2699700.00
+    Outlier: Bolivia = 1083300.00
+    Outlier: Libya = 1759540.00
+    Outlier: Mauritania = 1030700.00
+    Outlier: Mongolia = 1553560.00
+
+STEP 12: DATA QUALITY REPORT
+═══════════════════════════════════════════════════════════
+Dataset Summary:
+  Total Records: 233
+  Total Columns: 6
+  Numeric Columns: 5
+  Categorical Columns: 1
+  Total Missing Values: 229
+  Total Outliers Detected: 113
+  Data Cleanliness: 100.00%
+
+✓ EDA COMPLETE - All 12 steps executed successfully!
+
+Generated Report File: complete_eda_report.txt

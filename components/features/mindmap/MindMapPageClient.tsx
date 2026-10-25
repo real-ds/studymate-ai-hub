@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react"
 import { toPng } from "html-to-image"
+import { errorMessage, getErrorClass } from "@/lib/llm/errors"
 import FileDropzone from "@/components/upload/FileDropzone"
 import PageHeader from "@/components/shared/PageHeader"
 import MindMapCanvas from "./MindMapCanvas"
@@ -77,9 +78,9 @@ export default function MindMapPageClient() {
       <FileDropzone feature="mindmap" onUploadComplete={handleUploadComplete} />
 
       {error && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          <p className="font-semibold">Generation Failed</p>
-          <p className="mt-1">{error}</p>
+        <div className="mt-4 rounded-lg p-4 text-sm">
+          <p className="font-semibold">{error.error.modelId || 'Unknown model'}</p>
+          <p className={getErrorClass(error.error.errorType)}>{errorMessage(error.error)}</p>
           
         </div>
       )}

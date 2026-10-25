@@ -20,11 +20,8 @@ async function getFileBuffer(file: File): Promise<Buffer> {
   return Buffer.from(arrayBuffer)
 }
 
-async function saveLocally(buffer: Buffer, fileName: string): Promise<string> {
-  await ensureUploadDir()
-  const localPath = path.join(UPLOAD_DIR, fileName)
-  await fs.writeFile(localPath, buffer)
-  return `${getBaseUrl()}/uploads/${fileName}`
+async function saveLocally(_buffer: Buffer, _fileName: string): Promise<string> {
+  throw new Error("Local file upload not supported on Vercel - use Vercel Blob or R2 storage")
 }
 
 export async function uploadFile(
