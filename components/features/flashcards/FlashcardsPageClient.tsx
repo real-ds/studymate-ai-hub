@@ -61,8 +61,8 @@ export default function FlashcardsPageClient() {
 
       {error && (
         <div className="mt-4 rounded-lg p-4 text-sm">
-          <p className="font-semibold">{error.error.modelId || 'Unknown model'}</p>
-          <p className={getErrorClass(error.error.errorType)}>{errorMessage(error.error)}</p>
+          <p className="font-semibold">{error || 'Unknown model'}</p>
+          <p className={getErrorClass('unknown')}>{errorMessage(error)}</p>
           
         </div>
       )}
