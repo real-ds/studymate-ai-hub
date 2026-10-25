@@ -1,46 +1,78 @@
 import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai"
 import type { LLMProvider } from "./provider"
+import { parseJsonLoose } from "./openai-compatible"
+import { toLLMError } from "./errors"
+
+const DEFAULT_MODEL = "gemini-3.5-flash"
 
 export class GeminiProvider implements LLMProvider {
+  readonly name = "Gemini"
+  readonly modelId: string
   private model: GenerativeModel
 
-  constructor(apiKey: string, systemPrompt?: string) {
+  constructor(apiKey: string, modelId: string = DEFAULT_MODEL, systemPrompt?: string) {
     const genAI = new GoogleGenerativeAI(apiKey)
+    this.modelId = modelId
     this.model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash",
+      model: modelId,
       ...(systemPrompt ? { systemInstruction: systemPrompt } : {}),
     })
   }
 
+  /**
+   * Builds the fallback provider from env. Returns null (inactive) when
+   * GEMINI_API_KEY is not configured, so the pool simply skips it.
+   */
+  static fromEnv(): GeminiProvider | null {
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return null
+    return new GeminiProvider(apiKey, process.env.GEMINI_MODEL || DEFAULT_MODEL)
+  }
+
   async generateText(prompt: string): Promise<string> {
-    const result = await this.model.generateContent(prompt)
-    return result.response.text()
+    try {
+      const result = await this.model.generateContent(prompt)
+      return result.response.text()
+    } catch (err) {
+      throw toLLMError(this.name, err)
+    }
   }
 
   async generateStream(prompt: string): Promise<ReadableStream> {
-    const result = await this.model.generateContentStream(prompt)
+    let result: Awaited<ReturnType<GenerativeModel["generateContentStream"]>>
+    try {
+      result = await this.model.generateContentStream(prompt)
+    } catch (err) {
+      throw toLLMError(this.name, err)
+    }
+
     return new ReadableStream({
       async start(controller) {
-        for await (const chunk of result.stream) {
-          const text = chunk.text()
-          if (text) {
-            controller.enqueue(new TextEncoder().encode(text))
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text()
+            if (text) controller.enqueue(new TextEncoder().encode(text))
           }
+          controller.close()
+        } catch (err) {
+          controller.error(toLLMError("Gemini", err))
         }
-        controller.close()
       },
     })
   }
 
   async generateJSON<T>(prompt: string): Promise<T> {
-    const result = await this.model.generateContent(prompt)
-    const text = result.response.text()
-    const cleaned = text.replace(/```(?:json)?\s*/g, "").trim()
-    return JSON.parse(cleaned) as T
+    try {
+      const result = await this.model.generateContent(prompt)
+      return parseJsonLoose<T>(result.response.text())
+    } catch (err) {
+      throw toLLMError(this.name, err)
+    }
   }
 }
 
-export function getGeminiVisionModel(apiKey: string) {
+export function getGeminiVisionModel(apiKey: string = process.env.GEMINI_API_KEY || "", modelId: string = DEFAULT_MODEL) {
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured for image processing")
   const genAI = new GoogleGenerativeAI(apiKey)
-  return genAI.getGenerativeModel({ model: "gemini-3.5-flash" })
+  return genAI.getGenerativeModel({ model: modelId })
 }

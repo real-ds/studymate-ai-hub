@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
-import { fileRecords, sessionsOutput, apiKeys } from "@/lib/db/schema"
+import { fileRecords, sessionsOutput } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { extractTextFromFile } from "@/lib/parsers"
 import { getRevisionPrompt } from "@/lib/llm/prompts/revision"
-import { GeminiProvider } from "@/lib/llm/gemini"
-import { decrypt } from "@/lib/crypto/api-key"
+import { llm } from "@/lib/llm/registry"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,23 +37,6 @@ export async function POST(request: NextRequest) {
       .set({ status: "processing" })
       .where(eq(fileRecords.id, fileRecordId))
 
-    const [apiKeyRow] = await db
-      .select()
-      .from(apiKeys)
-      .where(
-        and(eq(apiKeys.userId, userId), eq(apiKeys.provider, "gemini"), eq(apiKeys.isActive, true))
-      )
-
-    if (!apiKeyRow) {
-      await db
-        .update(fileRecords)
-        .set({ status: "failed", errorMessage: "Please add your Gemini API key in Profile" })
-        .where(eq(fileRecords.id, fileRecordId))
-      return Response.json({ error: "Please add your Gemini API key in Profile" }, { status: 400 })
-    }
-
-    const apiKey = decrypt(apiKeyRow.encryptedKey)
-
     let extractedText: string
     try {
       extractedText = await extractTextFromFile(record.fileUrl, record.fileType)
@@ -69,7 +51,6 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt = getRevisionPrompt(extractedText)
-    const gemini = new GeminiProvider(apiKey)
 
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
@@ -78,8 +59,8 @@ export async function POST(request: NextRequest) {
 
     ;(async () => {
       try {
-        const geminiStream = await gemini.generateStream(prompt)
-        const reader = geminiStream.getReader()
+        const stream = await llm.generateStream(prompt)
+        const reader = stream.getReader()
         const decoder = new TextDecoder()
 
         while (true) {
@@ -103,11 +84,12 @@ export async function POST(request: NextRequest) {
           .update(fileRecords)
           .set({ status: "done" })
           .where(eq(fileRecords.id, fileRecordId))
-      } catch {
+      } catch (streamError) {
+        console.error("Revision stream error:", streamError)
         try { await writer.abort() } catch {}
         await db
           .update(fileRecords)
-          .set({ status: "failed", errorMessage: "Generation failed" })
+          .set({ status: "failed", errorMessage: streamError instanceof Error ? streamError.message : "Generation failed" })
           .where(eq(fileRecords.id, fileRecordId))
       }
     })()

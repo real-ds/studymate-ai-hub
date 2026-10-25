@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth/config"
 import { db } from "@/lib/db"
-import { fileRecords, sessionsOutput, apiKeys } from "@/lib/db/schema"
+import { fileRecords, sessionsOutput } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { extractTextFromFile } from "@/lib/parsers"
 import { getMindMapPrompt } from "@/lib/llm/prompts/mindmap"
-import { GeminiProvider } from "@/lib/llm/gemini"
-import { decrypt } from "@/lib/crypto/api-key"
+import { llm } from "@/lib/llm/registry"
 import type { MindMapNode } from "@/types/feature.types"
 
 export async function POST(request: NextRequest) {
@@ -39,23 +38,6 @@ export async function POST(request: NextRequest) {
       .set({ status: "processing" })
       .where(eq(fileRecords.id, fileRecordId))
 
-    const [apiKeyRow] = await db
-      .select()
-      .from(apiKeys)
-      .where(
-        and(eq(apiKeys.userId, userId), eq(apiKeys.provider, "gemini"), eq(apiKeys.isActive, true))
-      )
-
-    if (!apiKeyRow) {
-      await db
-        .update(fileRecords)
-        .set({ status: "failed", errorMessage: "Please add your Gemini API key in Profile" })
-        .where(eq(fileRecords.id, fileRecordId))
-      return Response.json({ error: "Please add your Gemini API key in Profile" }, { status: 400 })
-    }
-
-    const apiKey = decrypt(apiKeyRow.encryptedKey)
-
     let extractedText: string
     try {
       extractedText = await extractTextFromFile(record.fileUrl, record.fileType)
@@ -70,8 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt = getMindMapPrompt(extractedText)
-    const gemini = new GeminiProvider(apiKey)
-    const mindMap = await gemini.generateJSON<MindMapNode>(prompt)
+    const mindMap = await llm.generateJSON<MindMapNode>(prompt)
 
     await db.insert(sessionsOutput).values({
       fileRecordId,
