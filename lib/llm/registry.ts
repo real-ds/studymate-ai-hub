@@ -2,7 +2,7 @@ import type { LLMProvider } from "./provider"
 import { buildEndpointPool, getProviderConfigs } from "./config"
 import { GeminiProvider } from "./gemini"
 import { isCoolingDown, markCooldown, nextIndex, shouldCooldown } from "./pool"
-import { toLLMError, LLMErrorType, getErrorClass } from "./errors"
+import { toLLMError, LLMErrorType, getErrorClass, LLMRequestError } from "./errors"
 
 interface ProviderFailure {
   provider: string

@@ -11,7 +11,7 @@ export class LLMRequestError extends Error {
   readonly provider: string
   readonly status?: number
   readonly errorType: LLMErrorType
-  readonly modelId: string
+  modelId: string
 
   constructor(provider: string, message: string, status?: number, errorType: LLMErrorType = LLMErrorType.UNKNOWN, modelId: string = "") {
     super(message)
@@ -41,9 +41,9 @@ export function toLLMError(provider: string, err: unknown, modelId: string = "")
   let errorType: LLMErrorType = LLMErrorType.UNKNOWN
 
   if (status === 429) errorType = LLMErrorType.RATE_LIMIT
-  else if (status === 503 || status === 408) errorType = LLMErrorType.UNAVAILABLE
-  else if (status === 401 || status === 403) errorType = LLMErrorType.AUTH_ERROR
-  else if (status >= 500) errorType = LLMErrorType.SERVER_ERROR
+  else if (status && (status === 503 || status === 408)) errorType = LLMErrorType.UNAVAILABLE
+  else if (status && (status === 401 || status === 403)) errorType = LLMErrorType.AUTH_ERROR
+  else if (status !== undefined && status >= 500) errorType = LLMErrorType.SERVER_ERROR
   else if (!status) errorType = LLMErrorType.NETWORK_ERROR
 
   return new LLMRequestError(provider, message, status, errorType, modelId)
