@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react"
 import { toPng } from "html-to-image"
-import { errorMessage, getErrorClass } from "@/lib/llm/errors"
+import { errorMessage } from "@/lib/llm/errors"
 import FileDropzone from "@/components/upload/FileDropzone"
 import PageHeader from "@/components/shared/PageHeader"
 import MindMapCanvas from "./MindMapCanvas"
@@ -79,8 +79,8 @@ export default function MindMapPageClient() {
 
       {error && (
         <div className="mt-4 rounded-lg p-4 text-sm">
-          <p className="font-semibold">{error.error.modelId || 'Unknown model'}</p>
-          <p className={getErrorClass(error.error.errorType)}>{errorMessage(error.error)}</p>
+          <p className="font-semibold">{error || 'Unknown model'}</p>
+          <p className={errorMessage(error).includes('Rate limited') || errorMessage(error).includes('Unavailable') ? "bg-orange-500/10 border-orange-500 text-orange-400" : "bg-gray-500/10 border-gray-300 text-gray-400"}>{errorMessage(error)}</p>
           
         </div>
       )}
