@@ -50,10 +50,17 @@ export function toLLMError(provider: string, err: unknown, modelId: string = "")
 }
 
 /**
- * Determines whether an endpoint should be temporarily taken out of rotation.
- * Network errors (no status) and auth/rate-limit/server errors trigger cooldown.
+ * Extracts a user-friendly message from an LLM error.
+ * Handles LLMRequestError with modelId/errorType, or generic Error.
  */
-export function shouldCooldown(err: unknown): boolean {
+export function errorMessage(error: unknown): string {
+  if (error instanceof LLMRequestError) {
+    const prefix = error.errorType === LLMErrorType.RATE_LIMIT ? 'Rate limited' : error.errorType === LLMErrorType.UNAVAILABLE ? 'Unavailable' : ''
+    return `${prefix}: ${error.message} (model: ${error.modelId})`.trim()
+  }
+  if (error instanceof Error) return error.message
+  return String(error)
+}
   if (!(err instanceof LLMRequestError)) return true
   const status = err.status
   if (status === undefined) return true
