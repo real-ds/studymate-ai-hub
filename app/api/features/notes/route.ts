@@ -7,7 +7,7 @@ import { extractTextFromFile } from "@/lib/parsers"
 import { getNotesPrompt } from "@/lib/llm/prompts/notes"
 import { llm } from "@/lib/llm/registry"
 import { getGeminiVisionModel } from "@/lib/llm/gemini"
-import { LLMErrorType } from "@/lib/llm/errors"
+import { LLMErrorType, LLMRequestError } from "@/lib/llm/errors"
 
 export async function POST(request: NextRequest) {
   try {
@@ -128,9 +128,8 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "Failed to generate notes"
     // Include model ID and error type if available
     let enhancedMessage = message
-    if (error instanceof Error && 'modelId' in error && 'errorType' in error) {
-      // @ts-expect-error - LLMRequestError has extra properties
-      const typedError = error as { modelId: string; errorType: LLMErrorType }
+    if (error instanceof LLMRequestError) {
+      const typedError = error
       const typePrefix = typedError.errorType === LLMErrorType.RATE_LIMIT ? 'Rate limited' : typedError.errorType === LLMErrorType.UNAVAILABLE ? 'Unavailable' : ''
       enhancedMessage = `${typePrefix}: ${message} (model: ${typedError.modelId})`
     }
