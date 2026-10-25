@@ -50,18 +50,13 @@ export function toLLMError(provider: string, err: unknown, modelId: string = "")
 }
 
 /**
- * Extracts a user-friendly message from an LLM error.
- * Handles LLMRequestError with modelId/errorType, or generic Error.
+ * Determines whether an endpoint should be temporarily taken out of rotation.
+ * Network errors (no status) and auth/rate-limit/server errors trigger cooldown.
  */
-export function errorMessage(error: unknown): string {
-  if (error instanceof LLMRequestError) {
-    const prefix = error.errorType === LLMErrorType.RATE_LIMIT ? 'Rate limited' : error.errorType === LLMErrorType.UNAVAILABLE ? 'Unavailable' : ''
-    return `${prefix}: ${error.message} (model: ${error.modelId})`.trim()
+export function shouldCooldown(err: unknown): boolean {
+  if (!(err instanceof LLMRequestError)) {
+    return true
   }
-  if (error instanceof Error) return error.message
-  return String(error)
-}
-  if (!(err instanceof LLMRequestError)) return true
   const status = err.status
   if (status === undefined) return true
   if ([401, 402, 403, 408, 409, 425, 429].includes(status)) return true
@@ -86,4 +81,19 @@ export function getErrorClass(errorType: LLMErrorType): string {
     default:
       return "bg-gray-500/10 border-gray-300 text-gray-400"
   }
+}
+
+/**
+ * Extracts a user-friendly message from an LLM error.
+ * Handles LLMRequestError with modelId/errorType, or generic Error.
+ * Used server-side in API routes; client components should inline the logic.
+ */
+export function errorMessage(error: unknown): string {
+  if (error instanceof LLMRequestError) {
+    const etype = error.errorType
+    const prefix = etype === LLMErrorType.RATE_LIMIT ? 'Rate limited' : etype === LLMErrorType.UNAVAILABLE ? 'Unavailable' : ''
+    return `${prefix}: ${error.message} (model: ${error.modelId})`.trim()
+  }
+  if (error instanceof Error) return error.message
+  return String(error)
 }
